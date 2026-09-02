@@ -36,20 +36,31 @@ def require_login() -> None:
         )
         st.stop()
 
-    st.title("🔒 Giriş Yap")
-    with st.form("login_form"):
-        username = st.text_input("Kullanıcı adı")
-        password = st.text_input("Parola", type="password")
-        submitted = st.form_submit_button("Giriş Yap")
+    # `layout="wide"` tüm sayfaya uygulandığı için formu ortalanmış, dar bir
+    # kart içine alıyoruz -- aksi halde tam ekrana yayılıp çirkin duruyor.
+    st.markdown("<div style='height: 12vh'></div>", unsafe_allow_html=True)
+    _, center, _ = st.columns([1, 1.1, 1])
+    with center:
+        with st.container(border=True):
+            st.markdown(
+                "<h2 style='text-align:center; margin-top:0;'>🔒 Giriş Yap</h2>",
+                unsafe_allow_html=True,
+            )
+            with st.form("login_form"):
+                username = st.text_input("Kullanıcı adı")
+                password = st.text_input("Parola", type="password")
+                submitted = st.form_submit_button(
+                    "Giriş Yap", use_container_width=True, type="primary"
+                )
 
-    if submitted:
-        user_ok = hmac.compare_digest(username, settings.auth_username)
-        pass_ok = hmac.compare_digest(password, settings.auth_password)
-        if user_ok and pass_ok:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("Kullanıcı adı veya parola hatalı.")
+            if submitted:
+                user_ok = hmac.compare_digest(username, settings.auth_username)
+                pass_ok = hmac.compare_digest(password, settings.auth_password)
+                if user_ok and pass_ok:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Kullanıcı adı veya parola hatalı.")
 
     st.stop()
 
