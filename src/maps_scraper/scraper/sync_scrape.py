@@ -27,6 +27,7 @@ from maps_scraper.scraper.parser import (
     extract_coordinates,
     extract_place_id,
 )
+from maps_scraper.scraper.rate_limit import _CONSENT_BUTTON_TEXTS
 
 _USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -54,8 +55,23 @@ def _polite_delay() -> None:
     time.sleep(ms / 1000)
 
 
+def _handle_consent(page) -> None:
+    if "consent.google.com" not in page.url:
+        return
+    for text in _CONSENT_BUTTON_TEXTS:
+        button = page.get_by_role("button", name=text)
+        if button.count() > 0:
+            try:
+                button.first.click(timeout=5_000)
+                page.wait_for_load_state("domcontentloaded")
+            except Exception:
+                pass
+            return
+
+
 def _collect_result_urls(page, query: str, max_results: int) -> list[str]:
     page.goto(_build_search_url(query), wait_until="domcontentloaded")
+    _handle_consent(page)
     try:
         page.wait_for_selector(_FEED_SELECTOR, timeout=15_000)
     except Exception:

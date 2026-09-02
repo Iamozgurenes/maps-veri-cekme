@@ -3,7 +3,7 @@ from urllib.parse import quote
 from playwright.async_api import Page
 
 from maps_scraper.config import settings
-from maps_scraper.scraper.rate_limit import polite_delay, raise_if_blocked
+from maps_scraper.scraper.rate_limit import handle_consent, polite_delay, raise_if_blocked
 
 _FEED_SELECTOR = 'div[role="feed"]'
 _RESULT_LINK_SELECTOR = f'{_FEED_SELECTOR} a[href*="/maps/place/"]'
@@ -21,6 +21,7 @@ async def collect_result_urls(page: Page, query: str) -> list[str]:
     her işletmenin detay URL'sini döner (kırpılma sinyali için
     settings.result_cap_threshold'a kadar toplar)."""
     await page.goto(build_search_url(query), wait_until="domcontentloaded")
+    await handle_consent(page)
     await raise_if_blocked(page)
 
     try:
