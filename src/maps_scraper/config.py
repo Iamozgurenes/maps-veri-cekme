@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     # sayar ve o ili ilçelerine böler (fan-out).
     result_cap_threshold: int = 110
 
+    # Sayfa navigasyonu/aksiyonları için varsayılan zaman aşımı. Playwright'ın
+    # 30sn varsayılanı, aynı makinede birden çok tarayıcı context'i paralel
+    # çalışırken (yüksek SCRAPE_CONCURRENCY) CPU/ağ yükünden kaynaklı yanlış
+    # pozitif zaman aşımlarına yol açabiliyor; bu yüzden biraz daha toleranslı.
+    page_timeout_ms: int = 45_000
+
     @property
     def proxies(self) -> list[str]:
         return [p.strip() for p in self.proxy_list.split(",") if p.strip()]

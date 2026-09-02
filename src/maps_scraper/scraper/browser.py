@@ -23,6 +23,7 @@ async def new_context(browser: Browser, proxy: dict | None = None):
         viewport={"width": 1366, "height": 900},
         proxy=proxy,
     )
+    context.set_default_timeout(settings.page_timeout_ms)
     # Google'ın en bariz otomasyon tespit sinyallerinden birini kapatır.
     await context.add_init_script(
         "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"

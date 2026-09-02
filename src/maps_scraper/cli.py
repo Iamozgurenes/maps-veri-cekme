@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import typer
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from maps_scraper.db.models import Business, ScrapeJob
 from maps_scraper.db.session import async_session, init_db as _init_db
@@ -78,6 +78,26 @@ def status() -> None:
     result = asyncio.run(_status())
     typer.echo(f"Job durumları: {result['jobs']}")
     typer.echo(f"Toplam işletme kaydı: {result['businesses']}")
+
+
+@app.command("retry-failed")
+def retry_failed() -> None:
+    """"failed" (deneme hakkı biten) ve yarıda kalmış "in_progress" job'ları
+    "pending"e çevirip yeniden kuyruğa alır (attempts sıfırlanır). Bir sonraki
+    `run` çağrısında bunlar da tekrar denenir."""
+
+    async def _retry() -> int:
+        async with async_session() as session:
+            result = await session.execute(
+                update(ScrapeJob)
+                .where(ScrapeJob.status.in_(["failed", "in_progress"]))
+                .values(status="pending", attempts=0, last_error=None)
+            )
+            await session.commit()
+            return result.rowcount
+
+    count = asyncio.run(_retry())
+    typer.echo(f"{count} job yeniden kuyruğa alındı (pending).")
 
 
 @app.command("webapp")

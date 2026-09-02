@@ -20,6 +20,7 @@ from urllib.parse import quote
 from playwright.sync_api import sync_playwright
 
 from maps_scraper.config import settings
+from maps_scraper.proxy.pool import proxy_pool
 from maps_scraper.scraper.parser import (
     _extract_opening_hours,
     _extract_rating_and_reviews,
@@ -152,6 +153,13 @@ def scrape_preview(
                 timezone_id="Europe/Istanbul",
                 user_agent=_USER_AGENT,
                 viewport={"width": 1366, "height": 900},
+                proxy=proxy_pool.next(),
+            )
+            context.set_default_timeout(settings.page_timeout_ms)
+            # Google'ın en bariz otomasyon tespit sinyallerinden birini kapatır
+            # (browser.py'deki async yoldakiyle aynı, tutarlılık için).
+            context.add_init_script(
+                "Object.defineProperty(navigator, 'webdriver', { get: () => undefined });"
             )
             page = context.new_page()
             urls = _collect_result_urls(page, query, max_results)
