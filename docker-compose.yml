@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: maps
+      POSTGRES_PASSWORD: maps
+      POSTGRES_DB: maps_scraper
+    ports:
+      - "5432:5432"
+    volumes:
+      - maps_pgdata:/var/lib/postgresql/data
+
+volumes:
+  maps_pgdata:
