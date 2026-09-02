@@ -3,8 +3,10 @@
 # devam eder -- bu dosya web + worker + db'yi birlikte tanımlar.
 #
 # EasyPanel'de proje env değişkenleri (Environment sekmesi) üzerinden
-# aşağıdaki ${...} değerlerini doldurun: POSTGRES_PASSWORD, SCRAPE_CONCURRENCY
-# (opsiyonel, varsayılan 2), PROXY_LIST (opsiyonel, varsayılan boş).
+# aşağıdaki ${...} değerlerini doldurun: POSTGRES_PASSWORD, AUTH_PASSWORD
+# (webapp girişi -- boş bırakılırsa webapp kimseye açılmaz), AUTH_USERNAME
+# (opsiyonel, varsayılan admin), SCRAPE_CONCURRENCY (opsiyonel, varsayılan 2),
+# PROXY_LIST (opsiyonel, varsayılan boş).
 
 services:
   db:
@@ -29,6 +31,8 @@ services:
       SCRAPE_DELAY_MAX_MS: ${SCRAPE_DELAY_MAX_MS:-3500}
       HEADLESS: "true"
       PROXY_LIST: ${PROXY_LIST:-}
+      AUTH_USERNAME: ${AUTH_USERNAME:-admin}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
     ports:
       - "8501:8501"
 

@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     # pozitif zaman aşımlarına yol açabiliyor; bu yüzden biraz daha toleranslı.
     page_timeout_ms: int = 45_000
 
+    # Webapp giriş ekranı. auth_password KASITLI olarak varsayılan değeri yok
+    # (boş) -- ayarlanmadığı sürece webapp kimseye açılmaz (fail-closed).
+    # EasyPanel'de/.env'de AUTH_USERNAME ve AUTH_PASSWORD ile ayarlayın.
+    auth_username: str = "admin"
+    auth_password: str = ""
+
     @property
     def proxies(self) -> list[str]:
         return [p.strip() for p in self.proxy_list.split(",") if p.strip()]

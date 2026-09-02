@@ -18,12 +18,16 @@ import asyncio
 import pandas as pd
 import streamlit as st
 
+from maps_scraper.auth import logout_button, require_login
 from maps_scraper.locations import TURKEY_LOCATIONS
 from maps_scraper.scraper.runner import save_results
 from maps_scraper.scraper.sync_scrape import scrape_all_ilceler, scrape_preview
 from maps_scraper.search_terms import DEFAULT_CATEGORIES
 
 st.set_page_config(page_title="Maps Veri Çekme", layout="wide")
+require_login()
+logout_button()
+
 st.title("Google Maps İşletme Veri Çekme")
 st.caption(
     "Bir hizmet kategorisi ve şehir (veya tüm Türkiye) seçip Google Maps'ten canlı "
