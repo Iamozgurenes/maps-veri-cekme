@@ -8,6 +8,7 @@ giriş yapılmadan oluşturulmuyor.
 """
 
 import asyncio
+import json
 
 import pandas as pd
 import pydeck as pdk
@@ -22,6 +23,34 @@ _DISPLAY_COLUMNS = [
     "rating", "review_count", "search_term", "last_seen_at",
 ]
 _EXTRA_COLUMNS = ["place_id", "latitude", "longitude", "opening_hours", "first_scraped_at"]
+
+# `rating`/`latitude`/`longitude` PostgreSQL Numeric sütunları SQLAlchemy'de
+# Python `Decimal` nesnesi olarak gelir; pandas bunları "object" dtype'ında
+# tutar. Bu sütunlara körlemesine fillna("") uygulamak (None -> "") aynı
+# kolonda Decimal ve str karışmasına yol açıp Streamlit'in Arrow'a
+# serileştirmesini kırıyordu (loglardaki ArrowTypeError). Bu yüzden bunları
+# açıkça float'a çeviriyoruz (None -> NaN, fillna gerekmez) ve fillna("")'ı
+# SADECE gerçek metin sütunlarına uyguluyoruz.
+_DECIMAL_COLUMNS = {"rating", "latitude", "longitude"}
+
+# fillna("") uygulanmaması gereken sütunlar: sayısal olanlar (üstteki Decimal
+# sütunlar + review_count -- pandas int/None listesini float64/NaN'a
+# yükseltiyor, ikisi de "" ile doldurulursa aynı Arrow hatasına yol açar) ve
+# tarih sütunları (zaten None olmuyor ama netlik için hariç tutuluyor).
+_NO_FILLNA_COLUMNS = _DECIMAL_COLUMNS | {"review_count", "first_scraped_at", "last_seen_at"}
+
+
+def _row_to_record(row, columns: list[str]) -> dict:
+    record = {}
+    for col in columns:
+        value = getattr(row, col)
+        if col in _DECIMAL_COLUMNS:
+            record[col] = float(value) if value is not None else None
+        elif col == "opening_hours":
+            record[col] = json.dumps(value, ensure_ascii=False) if value else None
+        else:
+            record[col] = value
+    return record
 
 # Bar grafikte okunabilirlik için en fazla bu kadar il gösterilir (81 il tek
 # grafikte sıkışık/okunaksız olur) -- kalanlar "Diğer" olarak toplanmaz,
@@ -234,11 +263,11 @@ def render() -> None:
             else:
                 st.caption("Bu sonuçlar için koordinat bilgisi yok.")
 
-        records = []
         columns = _DISPLAY_COLUMNS + (_EXTRA_COLUMNS if show_extra else [])
-        for row in rows:
-            records.append({col: getattr(row, col) for col in columns})
-        df = pd.DataFrame(records).fillna("")
+        records = [_row_to_record(row, columns) for row in rows]
+        df = pd.DataFrame(records)
+        text_columns = [c for c in columns if c not in _NO_FILLNA_COLUMNS]
+        df[text_columns] = df[text_columns].fillna("")
         st.dataframe(df, width="stretch", hide_index=True)
 
         st.download_button(
