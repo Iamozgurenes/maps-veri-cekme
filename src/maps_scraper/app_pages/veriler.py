@@ -10,6 +10,7 @@ giriş yapılmadan oluşturulmuyor.
 import asyncio
 
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 from sqlalchemy import delete, distinct, func, or_, select
 
@@ -105,6 +106,50 @@ def _fetch(il, ilce, term, min_rating, search_text, limit):
     return asyncio.run(_query())
 
 
+def _build_map_deck(rows) -> pdk.Deck | None:
+    points = [
+        {
+            "lat": float(row.latitude),
+            "lon": float(row.longitude),
+            "name": row.name,
+            "category": row.category or "-",
+            "rating": f"{row.rating:.1f}" if row.rating is not None else "-",
+            "review_count": row.review_count or 0,
+        }
+        for row in rows
+        if row.latitude is not None and row.longitude is not None
+    ]
+    if not points:
+        return None
+
+    map_df = pd.DataFrame(points)
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=map_df,
+        get_position=["lon", "lat"],
+        get_radius=70,
+        get_fill_color=[220, 38, 38, 170],
+        pickable=True,
+        auto_highlight=True,
+    )
+    view_state = pdk.ViewState(
+        latitude=map_df["lat"].mean(),
+        longitude=map_df["lon"].mean(),
+        zoom=10 if len(map_df) > 1 else 13,
+    )
+    tooltip = {
+        "html": "<b>{name}</b><br/>{category}<br/>⭐ {rating} ({review_count} yorum)",
+        "style": {"backgroundColor": "white", "color": "black"},
+    }
+    return pdk.Deck(
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip=tooltip,
+        map_provider="carto",
+        map_style="light",
+    )
+
+
 @st.dialog("⚠️ Tüm verileri sil")
 def _confirm_delete_dialog() -> None:
     st.write(
@@ -182,6 +227,13 @@ def render() -> None:
         st.caption(f"Sadece ilk {limit} satır gösteriliyor -- daha fazlası için 'Maks. satır'ı artırın.")
 
     if rows:
+        if st.toggle("🗺️ Haritada göster", value=True):
+            deck = _build_map_deck(rows)
+            if deck is not None:
+                st.pydeck_chart(deck, height=450)
+            else:
+                st.caption("Bu sonuçlar için koordinat bilgisi yok.")
+
         records = []
         columns = _DISPLAY_COLUMNS + (_EXTRA_COLUMNS if show_extra else [])
         for row in rows:

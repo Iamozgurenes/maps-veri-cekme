@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.0,<2",
     "streamlit>=1.38,<2",
     "pandas>=2.2,<3",
+    "pydeck>=0.9,<1",
 ]
 
 [tool.setuptools.packages.find]
