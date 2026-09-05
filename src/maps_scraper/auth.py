@@ -50,7 +50,7 @@ def require_login() -> None:
                 username = st.text_input("Kullanıcı adı")
                 password = st.text_input("Parola", type="password")
                 submitted = st.form_submit_button(
-                    "Giriş Yap", use_container_width=True, type="primary"
+                    "Giriş Yap", width="stretch", type="primary"
                 )
 
             if submitted:
